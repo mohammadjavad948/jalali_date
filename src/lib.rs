@@ -93,9 +93,73 @@ fn is_kabise(year: u16) -> bool {
     false
 }
 
+fn year_is_leap(gregorian_year: i32) -> bool {
+    return ((gregorian_year % 100) != 0 && (gregorian_year % 4) == 0)
+        || ((gregorian_year % 100) == 0 && (gregorian_year % 400) == 0);
+}
+
+static gregorian_months: [i32; 12] = [30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 28, 31];
+static gregorian_month_leap: [i32; 12] = [30, 31, 30, 31, 31, 30, 31, 30, 31, 31, 29, 31];
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct GregorianDate {
+    pub year: i32,
+    pub month: i32,
+    pub day: i32,
+}
+
+fn jalali_to_gregorian(year: i32, month: i32, day: i32) -> GregorianDate {
+    let mut gregorian_year = year + 621;
+    let mut gregorian_day_of_month = 0;
+    let mut gregorian_month = 0;
+    let march_day_diff = if year_is_leap(gregorian_year) { 12 } else { 11 };
+    let mut day_count = 0;
+
+    if (1..=6).contains(&month) {
+        day_count = (month - 1) * 31 + day;
+    } else {
+        day_count = (6 * 31) + (month - 7) * 30 + day;
+    }
+
+    if day_count < march_day_diff {
+        gregorian_day_of_month = day_count + (31 - march_day_diff);
+        gregorian_month = 3;
+    } else {
+        let mut remain_days = day_count - march_day_diff;
+        let mut i = 0;
+
+        if year_is_leap(gregorian_year + 1) {
+            while remain_days > gregorian_months[i] {
+                remain_days -= gregorian_month_leap[i];
+                i += 1;
+            }
+        } else {
+            while remain_days > gregorian_months[i] {
+                remain_days -= gregorian_months[i];
+                i += 1;
+            }
+        }
+
+        gregorian_day_of_month = remain_days;
+
+        if i > 8 {
+            gregorian_month = i - 8;
+            gregorian_year += 1;
+        } else {
+            gregorian_month = i + 4;
+        }
+    }
+
+    GregorianDate {
+        year: gregorian_year,
+        month: gregorian_month as i32,
+        day: gregorian_day_of_month,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{to_jalali, JalaliDate};
+    use crate::{jalali_to_gregorian, to_jalali, GregorianDate, JalaliDate};
 
     #[test]
     fn convert_date() {
@@ -119,6 +183,32 @@ mod tests {
                 day: 2,
                 month: 9,
                 year: 1394
+            }
+        );
+    }
+
+    #[test]
+    fn jalali_to_gregorian_date() {
+        let result = jalali_to_gregorian(1402, 8, 24);
+        assert_eq!(
+            result,
+            GregorianDate {
+                day: 15,
+                month: 11,
+                year: 2023
+            }
+        );
+    }
+
+    #[test]
+    fn jalali_to_gregorian_date_2() {
+        let result = jalali_to_gregorian(1402, 3, 3);
+        assert_eq!(
+            result,
+            GregorianDate {
+                day: 24,
+                month: 5,
+                year: 2023
             }
         );
     }

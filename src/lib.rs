@@ -108,7 +108,9 @@ pub struct GregorianDate {
     pub day: i32,
 }
 
-fn jalali_to_gregorian(year: i32, month: i32, day: i32) -> GregorianDate {
+/// month range is 1..12
+/// day starts from 1
+pub fn jalali_to_gregorian(year: i32, month: i32, day: i32) -> GregorianDate {
     let mut gregorian_year = year + 621;
     let mut gregorian_day_of_month = 0;
     let mut gregorian_month = 0;
